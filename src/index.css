@@ -1,0 +1,10 @@
+.grayscale-tiles {
+  filter: grayscale(100%) brightness(105%);
+}
+@font-face {
+  font-family: "iransans";
+  src: url('../public/iransans.ttf');
+}
+*{
+  font-family: 'iransans', sans-serif;
+}
