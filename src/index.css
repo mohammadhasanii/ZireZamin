@@ -1,3 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 .grayscale-tiles {
   filter: grayscale(100%) brightness(105%);
 }

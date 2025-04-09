@@ -1,15 +1,17 @@
 {
   "name": "zirezamin",
-  "version": "1.0.0.",
+  "version": "1.1.0.",
   "description": "ZireZamin is an interactive web application designed to visualize and monitor earthquake data across Iran and surrounding regions. The dashboard provides a real-time map interface combined with a detailed data table, allowing users to track seismic activities efficiently.",
   "scripts": {
     "start": "react-scripts start",
     "server": "node server.js"
   },
   "dependencies": {
+    "@tailwindcss/postcss": "^4.1.3",
     "axios": "^1.6.2",
     "leaflet": "^1.9.4",
     "node-fetch": "^2.6.1",
+    "postcss": "^8.5.3",
     "react": "^18.0.0",
     "react-dom": "^18.0.0",
     "react-leaflet": "^4.2.1",
@@ -26,5 +28,8 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.17"
   }
 }
