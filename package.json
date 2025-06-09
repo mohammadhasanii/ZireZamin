@@ -5,7 +5,8 @@
   "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js"
+    "start": "node server.js",
+    "build:exe": "pkg . --targets node18-win-x64 --output-path dist"
   },
   "repository": {
     "type": "git",
@@ -30,5 +31,15 @@
     "hbs": "^4.2.0",
     "jsdom": "^26.1.0",
     "node-fetch": "^2.7.0"
+  },
+  "devDependencies": {
+    "pkg": "^5.8.1"
+  },
+  "bin": "server.js",
+  "pkg": {
+    "assets": [
+      "views/**/*",
+      "public/**/*"
+    ]
   }
 }
