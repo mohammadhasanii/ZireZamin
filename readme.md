@@ -2,9 +2,9 @@
 ![version](https://img.shields.io/badge/version-v2.0.0-blue?style=flat-square)
 
 
-<img width="100%" loading="lazy" src="./public/demo-wallpaper.png" />
+<img width="100%" loading="lazy" src="./public/demo-light.png" />
 
-<img width="100%" loading="lazy" src="./public/demo-wallpaper.png" />
+<img width="100%" loading="lazy" src="./public/demo-dark.png" />
 
 ## Overview
 ZireZamin is an interactive web application for monitoring and visualizing earthquake data across Iran and surrounding regions. The dashboard provides a real-time map interface combined with a detailed data table, allowing users to efficiently track seismic activities. This project is built with a modern, lightweight architecture, featuring a zero-build frontend powered by Vanilla JavaScript and an Express server.
