@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl" class="light"> <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{title}}</title>
+    
+    <script src="/requirements/tailwind.js"></script>
+    <link rel="stylesheet" href="/requirements/leaflet.css" />
+    <script src="/requirements/leaflet.js"></script>
+<link rel="icon" type="image/svg+xml" href="/logo.svg" />
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['iransans', 'sans-serif'],
+                        mono: ['iransans', 'monospace'],
+                    },
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        .leaflet-popup-content-wrapper { border-radius: 0.5rem; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); }
+        .leaflet-popup-content { font-family: 'iransans', sans-serif; margin: 12px !important; line-height: 1.6; }
+        .light .leaflet-popup-content-wrapper, .light .leaflet-popup-tip { background: #ffffff; color: #111827; }
+        .dark .leaflet-popup-content-wrapper, .dark .leaflet-popup-tip { background: #1f2937; color: #d1d5db; border: 1px solid #374151; }
+        
+        .leaflet-control-zoom a { border-bottom: 1px solid #374151 !important; border-radius: 0.5rem !important; }
+        .light .leaflet-control-zoom a { color: #111827 !important; background-color: #ffffff !important; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
+        .dark .leaflet-control-zoom a { color: #fff !important; background-color: #1f2937 !important; }
+        .dark .leaflet-control-zoom a:hover { background-color: #374151 !important; }
+        .light .leaflet-control-zoom a:hover { background-color: #f3f4f6 !important; }
+
+        .dark .leaflet-tile-pane { filter: grayscale(1) invert(1) brightness(1.1) contrast(0.9); }
+        
+        @font-face {
+            font-family: "iransans";
+            src: url('/iransans.ttf') format('truetype');
+        }
+    </style>
+</head>
+
+<body class="font-sans bg-white dark:bg-black text-gray-800 dark:text-gray-300 transition-colors">
+    
+    <div class="flex flex-col h-screen">
+        <header class="flex items-center justify-between p-4 border-b bg-white dark:bg-black border-gray-200 dark:border-gray-800">
+            <div class="flex items-center">
+                <img src="/logo.svg" alt="logo-zirezamin" class="w-10 h-10" />
+                <p class="mx-3 text-lg font-bold text-gray-900 dark:text-white">زیره زمین</p>
+            </div>
+            <div class="flex items-center gap-4">
+                <div class="text-sm text-gray-500 dark:text-gray-400 text-right">
+                    <span>آخرین به‌روزرسانی: </span>
+                    <span id="last-updated">در حال دریافت...</span>
+                </div>
+                <button id="refresh-button" class="px-4 py-2 text-sm font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-gray-800 text-white dark:bg-white dark:text-black hover:bg-gray-700 dark:hover:bg-gray-200">
+                    به‌روزرسانی
+                </button>
+                <button id="theme-toggle-button" class="h-10 w-10 flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
+                </button>
+            </div>
+        </header>
+
+        <div class="md:hidden p-2 border-b border-gray-200 dark:border-gray-800">
+            <button id="toggle-table-button" class="w-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 py-2 px-4 rounded-lg text-center text-gray-800 dark:text-white">
+                نمایش لیست
+            </button>
+        </div>
+        
+        <main class="flex flex-col md:flex-row flex-1 overflow-hidden">
+            <div id="table-container" class="flex-1 md:w-1/3 overflow-y-auto border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-black hidden md:flex flex-col">
+                <div class="p-4 flex justify-between items-center sticky top-0 bg-white dark:bg-black z-10 border-b border-gray-200 dark:border-gray-800">
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white">آخرین رویدادها</h3>
+                    <span id="event-count" class="text-sm text-gray-500 dark:text-gray-400">0 رویداد</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead class="sticky top-0 bg-gray-50 dark:bg-black z-[9]">
+                            <tr>
+                                <th class="p-3 text-right font-semibold text-gray-500 dark:text-gray-400">زمان</th>
+                                <th class="p-3 font-semibold text-gray-500 dark:text-gray-400">بزرگی</th>
+                                <th class="p-3 font-semibold text-gray-500 dark:text-gray-400">عمق (km)</th>
+                                <th class="p-3 text-right font-semibold text-gray-500 dark:text-gray-400">منطقه</th>
+                            </tr>
+                        </thead>
+                        <tbody id="earthquake-list-body" class="text-gray-800 dark:text-gray-200"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div id="map-container" class="flex-1 md:w-2/3 md:block">
+                <div id="map" class="h-full w-full bg-gray-100 dark:bg-black"></div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            // --- Theme Switcher Logic ---
+            const themeToggleButton = document.getElementById('theme-toggle-button');
+            const icons = {
+                light: `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>`,
+                dark: `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>`
+            };
+            
+            const applyTheme = (theme) => {
+                localStorage.setItem('theme', theme);
+                if (theme === 'dark') {
+                    document.documentElement.classList.add('dark');
+                    document.documentElement.classList.remove('light');
+                    themeToggleButton.innerHTML = icons.light;
+                } else {
+                    document.documentElement.classList.remove('dark');
+                    document.documentElement.classList.add('light');
+                    themeToggleButton.innerHTML = icons.dark;
+                }
+            };
+
+            themeToggleButton.addEventListener('click', () => {
+                const newTheme = localStorage.getItem('theme') === 'dark' ? 'light' : 'dark';
+                applyTheme(newTheme);
+            });
+            
+            // --- Earthquake App Logic ---
+            let earthquakes = [];
+            let selectedPointIndex = null;
+            let isLoading = false;
+            let map;
+            let markers = [];
+            const REFRESH_INTERVAL = 5 * 60 * 1000;
+
+            const lastUpdatedEl = document.getElementById('last-updated');
+            const refreshButton = document.getElementById('refresh-button');
+            const toggleTableButton = document.getElementById('toggle-table-button');
+            const mapContainer = document.getElementById('map-container');
+            const tableContainer = document.getElementById('table-container');
+            const tableBody = document.getElementById('earthquake-list-body');
+            const eventCountEl = document.getElementById('event-count');
+            
+            function toFarsiNumerals(input) {
+                const str = String(input);
+                const persian = { '0': '۰', '1': '۱', '2': '۲', '3': '۳', '4': '۴', '5': '۵', '6': '۶', '7': '۷', '8': '۸', '9': '۹' };
+                let result = '';
+                for (let i = 0; i < str.length; i++) {
+                    const char = str[i];
+                    result += persian[char] || char;
+                }
+                return result;
+            }
+
+            const getColorByMagnitude = (magnitude) => {
+                if (magnitude < 4) return "#facc15"; if (magnitude < 6) return "#fb923c";
+                if (magnitude < 7) return "#f87171"; if (magnitude < 8) return "#c084fc";
+                if (magnitude >= 8) return "#a5b4fc"; return "#9ca3af";
+            };
+
+            const farsiMonths = ["فروردین", "اردیبهشت", "خرداد", "تیر", "مرداد", "شهریور", "مهر", "آبان", "آذر", "دی", "بهمن", "اسفند"];
+            
+            function formatRelativeDate(dateStr) {
+                if (!dateStr) return '';
+                const [datePart, timePart] = dateStr.split(' ');
+                const [year, month, day] = datePart.split('-').map(Number);
+                const time = timePart.substring(0, 5);
+                const today = new Date();
+                const yesterday = new Date();
+                yesterday.setDate(today.getDate() - 1);
+                const options = { year: 'numeric', month: 'numeric', day: 'numeric', numberingSystem: 'arab' };
+                const todayJalali = new Intl.DateTimeFormat('fa-IR-u-ca-persian', options).format(today);
+                const yesterdayJalali = new Intl.DateTimeFormat('fa-IR-u-ca-persian', options).format(yesterday);
+                const [tYear, tMonth, tDay] = todayJalali.replace(/[\u200E\u200F]/g, '').split('/').map(Number);
+                const [yYear, yMonth, yDay] = yesterdayJalali.replace(/[\u200E\u200F]/g, '').split('/').map(Number);
+                if (year === tYear && month === tMonth && day === tDay) return `امروز، ساعت ${time}`;
+                if (year === yYear && month === yMonth && day === yDay) return `دیروز، ساعت ${time}`;
+                return `${day} ${farsiMonths[month - 1]} ${year}، ساعت ${time}`;
+            }
+
+            function renderLoadingState() {
+                if (isLoading) {
+                    refreshButton.disabled = true;
+                    refreshButton.innerHTML = `<svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
+                } else {
+                    refreshButton.disabled = false;
+                    refreshButton.textContent = "به‌روزرسانی";
+                }
+            }
+            
+            function renderTable() {
+                tableBody.innerHTML = '';
+                eventCountEl.textContent = `${toFarsiNumerals(earthquakes.length)} رویداد`;
+                earthquakes.forEach((eq, index) => {
+                    const row = document.createElement('tr');
+                    row.className = "border-b border-gray-200 dark:border-gray-800 last:border-b-0 cursor-pointer transition-colors hover:bg-gray-100 dark:hover:bg-gray-800";
+                    if (index === selectedPointIndex) {
+                        row.classList.add('!bg-blue-50', 'dark:!bg-gray-700');
+                    }
+                    row.onclick = () => flyToPoint(index);
+                    const magnitude = parseFloat(eq.magnitude);
+                    row.innerHTML = `
+                        <td class="p-4 text-xs whitespace-nowrap">${toFarsiNumerals(formatRelativeDate(eq.dateTime))}</td>
+                        <td class="p-4 text-center">
+                            <span class="px-3 py-1 text-xs font-bold rounded-full text-black dark:text-white" style="background-color: ${getColorByMagnitude(magnitude)}">
+                                ${toFarsiNumerals(magnitude.toFixed(1))}
+                            </span>
+                        </td>
+                        <td class="p-4 text-center">${toFarsiNumerals(eq.depth)}</td>
+                        <td class="p-4 text-xs text-gray-500 dark:text-gray-400">${eq.location}</td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            }
+
+            function renderMarkers() {
+                markers.forEach(marker => marker.remove());
+                markers = [];
+                earthquakes.forEach((eq, index) => {
+                    const magnitude = parseFloat(eq.magnitude);
+                    const marker = L.circleMarker([parseFloat(eq.latitude), parseFloat(eq.longitude)], {
+                        radius: Math.max(magnitude * 2.5, 6),
+                        color: getColorByMagnitude(magnitude), weight: 2,
+                        fillColor: getColorByMagnitude(magnitude), fillOpacity: 0.3,
+                    }).addTo(map);
+                    
+                    // ✅ محتوای کامل و خوانا برای پاپ‌آپ
+                    marker.bindPopup(`
+                        <div dir="rtl" class="text-sm font-sans">
+                            <div class="font-bold text-base mb-2 pb-1 border-b border-gray-300 dark:border-gray-600">${eq.location}</div>
+                            <div><strong>بزرگی:</strong> <span class="font-bold" style="color: ${getColorByMagnitude(magnitude)}">${toFarsiNumerals(magnitude)}</span> ریشتر</div>
+                            <div><strong>عمق:</strong> ${toFarsiNumerals(eq.depth)} کیلومتر</div>
+                            <div class="mt-2 text-xs text-gray-500 dark:text-gray-400">${toFarsiNumerals(formatRelativeDate(eq.dateTime))}</div>
+                        </div>
+                    `);
+
+                    marker.on('click', () => flyToPoint(index));
+                    markers.push(marker);
+                });
+            }
+            
+            async function fetchEarthquakeData() {
+                if(isLoading) return;
+                isLoading = true;
+                renderLoadingState();
+                try {
+                    const response = await fetch("/api/earthquakes");
+                    const data = await response.json();
+                    earthquakes = data.earthquakes.filter(eq => !isNaN(parseFloat(eq.latitude)));
+                    renderTable();
+                    renderMarkers();
+                    lastUpdatedEl.textContent = new Date(data.lastUpdated).toLocaleString('fa-IR', { hour: '2-digit', minute: '2-digit', numberingSystem: 'arab' });
+                } catch (error) {
+                    console.error("Error fetching earthquake data:", error);
+                    lastUpdatedEl.textContent = "خطا در دریافت";
+                } finally {
+                    isLoading = false;
+                    renderLoadingState();
+                }
+            }
+
+            function flyToPoint(index) {
+                const eq = earthquakes[index];
+                if (!eq) return;
+                selectedPointIndex = index;
+                renderTable();
+                map.flyTo([parseFloat(eq.latitude), parseFloat(eq.longitude)], 8);
+                if (markers[index]) {
+                    setTimeout(() => { markers[index].openPopup(); }, 300);
+                }
+                if (window.innerWidth < 768) {
+                    toggleTable(false);
+                }
+            }
+
+            function toggleTable(show) {
+                const shouldBeVisible = typeof show === 'boolean' ? show : tableContainer.classList.contains('hidden');
+                if (shouldBeVisible) {
+                    tableContainer.classList.remove('hidden'); mapContainer.classList.add('hidden');
+                    toggleTableButton.textContent = "بستن لیست";
+                } else {
+                    tableContainer.classList.add('hidden'); mapContainer.classList.remove('hidden');
+                    toggleTableButton.textContent = "نمایش لیست";
+                }
+                setTimeout(() => window.dispatchEvent(new Event('resize')), 10);
+            }
+            
+            function initializeMap() {
+                const iranBounds = [ [24, 44], [40, 64] ];
+                map = L.map('map', { 
+                    zoomControl: false, maxBounds: iranBounds, maxBoundsViscosity: 1.0 
+                }).setView([32.4279, 53.6880], 5);
+                L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_labels_under/{z}/{x}/{y}{r}.png', {
+                    attribution: '&copy; OpenStreetMap &copy; CARTO',
+                    minZoom: 5, maxZoom: 12
+                }).addTo(map);
+                L.control.zoom({ position: 'bottomright' }).addTo(map);
+            }
+
+            // --- Initial Load ---
+            refreshButton.addEventListener('click', fetchEarthquakeData);
+            toggleTableButton.addEventListener('click', () => toggleTable());
+            
+            initializeMap();
+            fetchEarthquakeData();
+            setInterval(fetchEarthquakeData, REFRESH_INTERVAL);
+
+            const initialTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            applyTheme(initialTheme);
+            
+            if (window.innerWidth < 768) {
+                mapContainer.classList.remove('hidden'); tableContainer.classList.add('hidden');
+            } else {
+                mapContainer.classList.remove('hidden'); tableContainer.classList.remove('hidden');
+            }
+        });
+    </script>
+</body>
+</html>

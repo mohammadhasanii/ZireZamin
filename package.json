@@ -1,0 +1,34 @@
+{
+  "name": "zirezamin",
+  "version": "2.0.0",
+  "description": "ZireZamin is an interactive web application designed to visualize and monitor earthquake data across Iran and surrounding regions. The dashboard provides a real-time map interface combined with a detailed data table, allowing users to track seismic activities efficiently.",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mohammadhasanii/ZireZamin.git"
+  },
+  "keywords": [
+    "iranian-seismological"
+  ],
+  "author": {
+    "email": "m789219@gmail.com",
+    "name": "Mohammad Hasani",
+    "url": "https://github.com/mohammadhasanii"
+  },
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/mohammadhasanii/ZireZamin/issues"
+  },
+  "homepage": "https://github.com/mohammadhasanii/ZireZamin#readme",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "hbs": "^4.2.0",
+    "jsdom": "^26.1.0",
+    "node-fetch": "^2.7.0"
+  }
+}
