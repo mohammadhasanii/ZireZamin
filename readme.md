@@ -1,4 +1,9 @@
 # ZireZamin - Real-time Iranian Seismological Monitoring
+![version](https://img.shields.io/badge/version-v2.0.0-blue?style=flat-square)
+
+
+<img width="100%" loading="lazy" src="./public/demo-wallpaper.png" />)
+
 <img width="100%" loading="lazy" src="./public/demo-wallpaper.png" />
 
 ## Overview
